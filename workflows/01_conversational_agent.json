@@ -1,0 +1,1326 @@
+{
+  "name": "WhatsApp - Musical prod. Chat bot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {
+          "messageStatusUpdates": [
+            "all"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -400
+      ],
+      "id": "ee216050-ec06-4862-b3a4-03cb808e1405",
+      "name": "WhatsApp Trigger",
+      "webhookId": "11986cee-12a1-4d03-91ce-f48ef36701b9",
+      "alwaysOutputData": false,
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "eMwAhSAQFx13lFgI",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d531e7cf-075f-4333-a7d0-45d991d441df",
+              "name": "message",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "ff1fc8c0-7fb3-4623-bc9b-7d524b86da51",
+              "name": "session_id",
+              "value": "={{ $json.messages[0].from }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        384,
+        -208
+      ],
+      "id": "f177d4fa-614f-41b7-b056-e86776fc9be9",
+      "name": "Get user message"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chat_input }}",
+        "options": {
+          "systemMessage": "={{ $json.system_prompt }}",
+          "passthroughBinaryImages": true,
+          "tracingMetadata": {
+            "values": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2112,
+        -400
+      ],
+      "id": "657821a0-461b-48b0-98dc-3fd54a464c72",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "maxTries": 5,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        2032,
+        -224
+      ],
+      "id": "e8909956-dd32-4ea6-a169-4a12a84946c3",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "HcgBKaXUE3QYBTsU",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.from }}",
+        "tableName": "chat_messages"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.4,
+      "position": [
+        2160,
+        -192
+      ],
+      "id": "9f87f103-3506-4e33-b34e-8e4d91a9e0b4",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "jnxbV4FAXGkWt4nT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "=1295787823622600",
+        "recipientPhoneNumber": "={{ $json.from }}",
+        "textBody": "={{ $json.whatsapp_message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        2976,
+        -400
+      ],
+      "id": "3c610a5b-69be-4471-898b-6bda41c43dff",
+      "name": "Send Message",
+      "webhookId": "9d1a1aa2-0dda-46b3-887b-781a2db7258c",
+      "alwaysOutputData": false,
+      "credentials": {
+        "whatsAppApi": {
+          "id": "8VIWvh1QeDCpKGks",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.messages[0].video || $json.messages[0].image }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    },
+                    "id": "c483d499-688d-4ac1-a0a9-a7214807a690"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "video/image"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "80bb423b-bd68-44f1-be7e-b517c91f2e8d",
+                    "leftValue": "={{ $json.messages[0].text.body }}",
+                    "rightValue": "=drive.google.com",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "drive"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        -416
+      ],
+      "id": "1a3c7329-b047-4d0c-9d7a-0f35348907d8",
+      "name": "Media Pre-processor"
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v20.0/{{ $json.messages[0].video?.id || $json.messages[0].image?.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        416,
+        -560
+      ],
+      "id": "1fb0de0f-12dd-461b-83f6-5c08e9ded068",
+      "name": "HTTP Request",
+      "alwaysOutputData": false,
+      "credentials": {
+        "whatsAppApi": {
+          "id": "8VIWvh1QeDCpKGks",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "=User-Agent",
+              "value": "=curl/7.64.1"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        608,
+        -560
+      ],
+      "id": "cc792f06-05fd-439e-bcb8-54736fa78ea4",
+      "name": "HTTP Request1",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "8VIWvh1QeDCpKGks",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.extracted_drive_url }}",
+          "mode": "url"
+        },
+        "options": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        608,
+        -400
+      ],
+      "id": "49ff40a4-8d55-4f9d-852f-30c3aea24dfc",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "tnULqzz9X9HkCCBJ",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Capturamos el texto del mensaje de WhatsApp\nconst messageText = $json.messages[0].text.body;\n\n// Extraemos la primera URL de Google Drive que encontremos en el texto\nconst driveUrlMatch =\n  messageText.match(/https?:\\/\\/(www\\.)?drive\\.google\\.com\\/[^\\s]+/);\nconst driveUrl = driveUrlMatch ? driveUrlMatch[0] : null;\n\nreturn [{\n  json: {\n    extracted_drive_url: driveUrl,\n    original_text: messageText\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        -400
+      ],
+      "id": "bf3c7a32-877d-4d48-868d-c4ee3226f31e",
+      "name": "Extract Media URL"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT message, created_at\nFROM weekly_ideas\nWHERE session_id = '{{ $(\"Format Message\").first().json.from }}'\nORDER BY created_at DESC\nLIMIT 2;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1472,
+        -416
+      ],
+      "id": "37a621de-1ef4-4954-addd-a40b9655dea1",
+      "name": "Get Last Weekly Lists",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "jnxbV4FAXGkWt4nT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Datos del mensaje original de WhatsApp\nconst webhookData = $('WhatsApp Trigger').first().json;\nconst messageBody = webhookData.messages[0];\n\n// Texto base enviado por el usuario\nconst baseText = messageBody?.text?.body || messageBody?.image?.caption || messageBody?.video?.caption || messageBody?.interactive?.button_reply?.title || \"\";\nconst senderPhone = messageBody?.from;\n\n// 2. Extraer datos del nodo de Scraping si se ha ejecutado\nlet socialInfoText = \"\";\n\ntry {\n  // Intentamos obtener la respuesta del nodo Media Scraper\n  const scraperOutput = $('Media Scraper').first().json;\n\n  if (scraperOutput && Object.keys(scraperOutput).length > 0) {\n    // Convertimos la salida del scraper a string JSON formateado\n    socialInfoText = typeof scraperOutput === 'object' \n      ? JSON.stringify(scraperOutput, null, 2) \n      : scraperOutput;\n  }\n} catch (e) {\n  // Si la rama que se ejecutó no pasó por \"Media Scraper\", no hace nada y continúa\n  socialInfoText = \"\";\n}\n\n// 3. Construir el chat_input final concatenado\nlet finalChatInput = baseText;\n\nif (socialInfoText) {\n  finalChatInput = `${baseText}\\n\\n---\\nINFORMACIÓN EXTRAÍDA DE REDES SOCIALES:\\n${socialInfoText}`;\n} else if (!finalChatInput) {\n  finalChatInput = $json.chat_input || \"[Archivo multimedia recibido]\";\n}\n\n// 4. Preservar binarios de las rutas de descarga (Drive / WhatsApp)\nconst binaryData = $binary?.data ? { data: $binary.data } : {};\n\nconst wamId = messageBody.id;\nconst contextWamId = messageBody.context?.id || '';\n\nreturn [{\n  json: {\n    wamid: wamId,\n    chat_input: finalChatInput,\n    from: senderPhone,\n    context_wamid: contextWamId\n  },\n  binary: binaryData,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        -400
+      ],
+      "id": "408602be-42d6-4c08-b379-981f87693458",
+      "name": "Format Message"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "users",
+          "mode": "list",
+          "cachedResultName": "users"
+        },
+        "limit": 1,
+        "where": {
+          "values": [
+            {
+              "column": "phone",
+              "value": "={{ $(\"Format Message\").first().json.from }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1328,
+        -384
+      ],
+      "id": "d47c7f65-7430-43e2-89f9-01bafa681b04",
+      "name": "Get User Profile",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "jnxbV4FAXGkWt4nT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    interviewer_prompt:\n      `# ROL Y OBJETIVO\n      Eres el Director Estratégico de un mentor de producción musical y creación de contenido. Tu objetivo es mantener una charla ágil y cercana por WhatsApp para construir la \"Ficha Estratégica\" del usuario antes de asignarle su plan de contenidos.\n      \n      # PERFIL Y ESTADO ACTUAL DEL USUARIO EN BASE DE DATOS:\n      \"\"\"\n      {{PROFILE_DESCRIPTION}}\n      \"\"\"\n      \n      # INFORMACIÓN ESTRATÉGICA A RECOPILAR (Áreas Clave):\n      1. BÁSICOS: Nombre y enlace a su perfil en redes si tiene (Instagram/TikTok/YouTube/Spotify).\n      2. SITUACIÓN Y OBJETIVO: Dónde está ahora (ej. empezando, freelancer, artista) y cuál es su meta profesional principal con las redes (ej. conseguir clientes de mezcla, ganar reproducciones como artista, vender samples, crear comunidad).\n      3. FORMATO DE CONTENIDO Y REFERENTES: Qué tipo de contenido se siente cómodo haciendo (hablar a cámara, solo pantalla/DAW, tutoriales, humor) y quiénes son sus referentes o artistas objetivo.\n      4. SUSCRIPCIÓN A IDEAS SEMANALES: Confirmar de forma clara si desea recibir semanalmente por WhatsApp una lista con 5 propuestas de contenido trending, ideas virales y estrategias adaptadas a su perfil.\n      \n      # REGLAS DE CONVERSACIÓN EN WHATSAPP:\n      1. Sé súper cercano, profesional y entusiasta (habla como un colega experimentado de la industria musical).\n      2. Estructura SIEMPRE tu mensaje de WhatsApp ('whatsapp_message') en 2 o 3 partes bien diferenciadas:\n         a) FEEDBACK Y VALIDACIÓN: Empieza siempre con una confirmación breve y entusiasta sobre la respuesta anterior del usuario (ej: \"¡Anotado!\", \"¡De acuerdo!\", \"¡Buenísimo!\", \"¡Tomando nota!\"). Agrega un breve comentario de valor o empatía sobre el dato que te acaba de dar.\n         b) SIGUIENTE PASO: \n            - Si faltan datos clave: Realiza la SIGUIENTE PREGUNTA (máximo 1 o 2 preguntas agrupadas de forma natural).\n            - Si la Ficha Estratégica ya está completa: Envía un mensaje de cierre confirmando que el cuestionario ha terminado y que la ficha del artista está lista para empezar a trabajar juntos.\n      3. Si el usuario te envía un enlace a su perfil o a un referente, analiza brevemente su presencia digital e inclúyelo en la Ficha Estratégica.\n      4. No extiendas la entrevista más de 4 o 5 intercambios de mensajes en total.\n      5. Aprovecha la última pregunta de la entrevista (cuando ya tengas claras sus metas y formato) para ofrecerle la entrega semanal de ideas: 'Por cierto, ¿quieres que te envíe cada semana por aquí una lista con 5 ideas de contenido trending adaptadas a tu perfil?'\n\n      # USO DE HERRAMIENTAS (TOOLS):\n      1. Si el usuario te pide explícitamente generar, consultar o ver nuevas ideas de contenido, propuestas de vídeos o su plan semanal, activa la herramienta 'generar_ideas_semanales'.\n      2. **SI LA HERRAMIENTA TIENE ÉXITO ('is_error': false):**\n         - Asigna la propiedad 'whatsapp_message' devuelta por la herramienta LITERALMENTE a tu campo 'whatsapp_message' de salida.\n         - NO resumas, NO agregues saludos extra, NO cambies emojis ni modifiques el formato en Markdown del texto devuelto por la herramienta.\n         - Copia directamente los valores de 'is_error' y 'error_details' devueltos por la herramienta a los campos raíz correspondientes de tu JSON.\n      3. **SI LA HERRAMIENTA DEVUELVE UN ERROR ('is_error': true):**\n         - En tu campo 'whatsapp_message', genera una disculpa breve y amable sin mostrar códigos técnicos. Ej: *\"¡Vaya! He tenido un problema técnico recuperando las tendencias de esta semana. Por favor, inténtalo de nuevo en unos minutos.\"*\n         - Asigna 'is_error: true' y copia el mensaje de 'error_details' devuelto por la herramienta.\n      \n      # FORMATO DE SALIDA (JSON Obligatorio):\n      Responde SIEMPRE en este formato JSON exacto sin texto adicional fuera del bloque JSON:\n      {\n        \"whatsapp_message\": \"El mensaje conversacional o el texto literal generado por la herramienta.\",\n        \"profile_update\": {\n          \"updated_profile_description\": \"Ficha Estratégica actualizada en Markdown con los datos nuevos o recopilados hasta el momento...\",\n          \"survey_finished\": false, // true SOLO si en este mensaje das por concluida toda la entrevista. De lo contrario, null o false.\n          \"weekly_reports_opt_in\": null // true si aceptó la entrega semanal, false si la rechazó explícitamente, null si aún no se lo has preguntado.\n        },\n        \"is_error\": false, // true si la herramienta devuelve error (\"is_error\": true)\n        \"error_details\": null // incluye el mensaje de error si la herramienta falla (\"error_details\" : \"...\")\n      }`,\n\n    conversation_prompt:\n      `# PERFIL DEL USUARIO EN BASE DE DATOS\n      \"\"\"\n      {{PROFILE_DESCRIPTION}}\n      \"\"\"\n      \n      # REPORTES / LISTAS DE IDEAS SEMANALES RECIENTES\n      A continuación tienes las últimas propuestas de contenido virales enviadas a este usuario. Utilízalas como contexto inmediato si el usuario se refiere a \"la idea 1\", \"el consejo del martes\", \"los hashtags que me diste\" o \"la propuesta de esta semana\":\n      \n      ---\n      {{WEEKLY_LISTS}}\n      ---\n      \n      # ROL Y OBJETIVO\n      Eres un mentor experto en composición, producción musical y estrategia de contenido viral para redes sociales (TikTok, Instagram Reels, YouTube Shorts). Tu rol es dialogar por WhatsApp con el usuario de forma ágil, resolver dudas técnicas sobre producción/composición, dar seguimiento a ideas semanales previas y auditar el material audiovisual que te envíe.\n      \n      # GESTIÓN DEL CONTEXTO Y LA MEMORIA\n      1. Tienes acceso al historial de conversación en PostgreSQL.\n      2. Si el usuario hace referencia a \"la idea 2\", \"lo que te pregunté ayer\" o un tema conversado previamente, consulta el historial para mantener la continuidad sin pedir aclaraciones innecesarias.\n      3. Si el usuario envía un archivo como respuesta a una conversación en curso (ej. le pediste que enviara un borrador), analiza el archivo bajo el contexto directo de los mensajes anteriores.\n      \n      # REGLAS PARA ACTUALIZACIÓN DEL PERFIL ('profile_update'):\n      1. Por defecto, el objeto 'profile_update' debe ser 'null' en casi todas las interacciones conversacionales.\n      2. ÚNICAMENTE si el usuario te pide explícitamente actualizar un dato de su perfil (ej: \"cambia mi nombre a Marttina Sanjuan\", \"actualiza mi género musical a Trap\", \"cancela mis ideas semanales\"), genera el objeto 'profile_update' reescribiendo la Ficha Estratégica en Markdown o cambiando los booleanos según corresponda.\n      \n      # ANÁLISIS MULTIMODAL Y ARCHIVOS ADJUNTOS (VÍDEO / AUDIO / IMAGEN)\n      Cuando el usuario te envíe un archivo adjunto, analiza minuciosamente su contenido visual, auditivo y narrativo aplicando el siguiente criterio de respuesta:\n      \n      1. SI VIENE ACOMPAÑADO DE UNA CONSULTA ESPECÍFICA (Ej: \"¿Está bien la mezcla?\", \"Dame una idea basada en esto\"):\n         - Responde de forma directa, precisa y conversacional a la duda o instrucción del usuario, utilizando el análisis técnico del archivo y el contexto de la memoria.\n      \n      2. SI VIENE CON UNA PETICIÓN ABIERTA O GENÉRICA (Ej: \"Quiero subir esto, ¿qué opinas?\", \"Mírate esto\", o solo el archivo):\n         - Realiza una evaluación estratégica enfocada en potenciar la viralidad y poner los algoritmos de redes sociales a su favor.\n         - Analiza y valora de forma orgánica los siguientes pilares clave:\n           * El Gancho (Hook): Retención e impacto visual y auditivo en los primeros 3 segundos.\n           * El Contenido y Ritmo: Dinamismo visual, claridad del mensaje/demostración musical y edición.\n           * Estrategia de Algoritmo y Viralidad: Qué elementos técnicos o narrativos optimizar para disparar el tiempo de visualización (watch time) y la interacción (guardados/compartidos).\n           * Propuesta de Publicación: Genera una descripción (copy) lista para publicar con una llamada a la acción (CTA) que incentive comentarios, sugiere los mejores hashtags estratégicos para ese nicho y recomienda los días/franjas horarias ideales para su publicación.\n      \n      # USO DE LA BÚSQUEDA EN INTERNET (WEB SEARCH)\n      - Responde con tu conocimiento previo sobre teoría musical, técnicas de mezcla, software y desarrollo de guiones.\n      - Activa la búsqueda en web ÚNICAMENTE para:\n        * Artistas, lanzamientos, tendencias virales o noticias musicales muy recientes.\n        * Precios o modelos específicos de hardware, auriculares, micrófonos o sintetizadores.\n        * Actualizaciones recientes de software/DAWs (ej. Ableton Live, FL Studio, Logic Pro).\n\n      # USO DE HERRAMIENTAS (TOOLS):\n      1. Si el usuario te pide explícitamente generar, consultar o ver nuevas ideas de contenido, propuestas de vídeos o su plan semanal, activa la herramienta 'generar_ideas_semanales'.\n      2. **SI LA HERRAMIENTA TIENE ÉXITO ('is_error': false):**\n         - Asigna la propiedad 'whatsapp_message' devuelta por la herramienta LITERALMENTE a tu campo 'whatsapp_message' de salida.\n         - NO resumas, NO agregues saludos extra, NO cambies emojis ni modifiques el formato en Markdown del texto devuelto por la herramienta.\n         - Copia directamente los valores de 'is_error' y 'error_details' devueltos por la herramienta a los campos raíz correspondientes de tu JSON.\n      3. **SI LA HERRAMIENTA DEVUELVE UN ERROR ('is_error': true):**\n         - En tu campo 'whatsapp_message', genera una disculpa breve y amable sin mostrar códigos técnicos. Ej: *\"¡Vaya! He tenido un problema técnico recuperando las tendencias de esta semana. Por favor, inténtalo de nuevo en unos minutos.\"*\n         - Asigna 'is_error: true' y copia el mensaje de 'error_details' devuelto por la herramienta.\n      \n      # REGLAS DE RESPUESTA EN WHATSAPP\n      1. Inmediatez y Concisión: Respuestas ágiles, sin rodeos ni introducciones vacías. Ve directo al grano con párrafos cortos adaptados a la lectura en móviles.\n      2. Tono Cercano y Técnico: Habla como un colega de estudio experimentado. Usa jerga técnica de producción musical (DAWs, plugins, frecuencia, dinámica) de forma natural.\n      3. Formato Limpio: Utiliza negritas (*texto*) y listas para estructurar la información sin que parezca un informe robótico predeterminado.\n      \n      # LÍMITES\n      - Si el usuario realiza preguntas totalmente ajenas a la música, la producción de audio o la estrategia de contenido, redirige amablemente la conversación hacia la temática del estudio musical.\n      \n      # FORMATO DE SALIDA (JSON Obligatorio):\n      Responde SIEMPRE en este formato JSON exacto sin texto adicional fuera del bloque JSON:\n      {\n        \"whatsapp_message\": \"El mensaje conversacional o el texto literal generado por la herramienta.\",\n        \"profile_update\": null, // Mantén esto en null por defecto. Solo incluye el objeto { \"updated_profile_description\": \"...\", \"survey_finished\": true/false, \"weekly_reports_opt_in\": true/false } si el usuario solicitó explícitamente cambiar algún dato de su perfil.\n        \"is_error\": false, // true si la herramienta devuelve error (\"is_error\": true)\n        \"error_details\": null // incluye el mensaje de error si la herramienta falla (\"error_details\" : \"...\")\n      }`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        -400
+      ],
+      "id": "4fc95122-09ab-4bff-bf8d-8bf72ee88785",
+      "name": "System Prompts Config",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Datos del mensaje y binarios\nconst formatMessageNode = $('Format Message').first();\nconst messageData = formatMessageNode?.json || {};\nconst binaryData = formatMessageNode?.binary || {};\n\n// 2. Datos del perfil del usuario en PostgreSQL\nconst userProfile = $('Get User Profile').first()?.json || {};\n\n// Normalización estricta de booleanos\nconst surveyCompleted = Boolean(userProfile.survey_completed);\nconst weeklySubscription = Boolean(userProfile.weekly_tips);\nconst profileDescription = userProfile.description || \"Perfil no iniciado.\";\n\n// 3. Procesamos las listas semanales de forma segura\nlet weeklyListsArray = [];\ntry {\n  weeklyListsArray = $('Get Last Weekly Lists').all().map(item => {\n    const createdAt = item.json?.created_at || new Date().toISOString();\n    let content = item.json?.message.content || {};\n\n    if (typeof content === 'string') {\n      try {\n        content = JSON.parse(content);\n      } catch (e) {\n        content = { raw_text: content };\n      }\n    }\n\n    return {\n      send_date: createdAt,\n      ...content\n    };\n  });\n} catch (e) {\n  weeklyListsArray = [];\n}\n\n// 4. Inyección estructurada de estado en la Ficha\nconst formattedProfileStatus = \n  `${profileDescription}\n  \n  ---\n  [ESTADO ACTUAL EN BASE DE DATOS]\n  - Cuestionario completado (survey_finished): ${surveyCompleted}\n  - Suscripción a ideas semanales (weekly_reports_opt_in): ${weeklySubscription}`;\n\nconst formattedWeeklyLists = weeklyListsArray.length > 0 \n  ? JSON.stringify(weeklyListsArray, null, 2) \n  : \"[]\";\n\n// 5. Carga de la plantilla del System Prompt\nconst promptsConfig = $('System Prompts Config').first()?.json || {};\nconst rawPrompt = surveyCompleted \n  ? (promptsConfig.conversation_prompt || \"\") \n  : (promptsConfig.interviewer_prompt || \"\");\n\n// Reemplazo seguro mediante expresiones regulares globales (replaceAll safe)\nconst finalSystemPrompt = rawPrompt\n  .replace(/\\{\\{PROFILE_DESCRIPTION\\}\\}/g, formattedProfileStatus)\n  .replace(/\\{\\{WEEKLY_LISTS\\}\\}/g, formattedWeeklyLists);\n\n// 6. Construcción del input enriquecido con contexto citado\nconst rawContextData = $(\"Get Message Context\").first()?.json?.message || null;\nconst currentText = messageData.chat_input || \"\";\n\nlet finalChatInput = currentText;\n\nif (rawContextData) {\n  const formattedContextJson = typeof rawContextData === 'object'\n    ? JSON.stringify(rawContextData, null, 2)\n    : rawContextData;\n\n  finalChatInput = \n    `[CONTEXTO DE REFERENCIA - MENSAJE AL QUE EL USUARIO ESTÁ RESPONDIENDO]\n    El usuario ha utilizado la función \"Responder\" de WhatsApp sobre el siguiente mensaje/contenido anterior.\n    Usarás este JSON únicamente como trasfondo contextual:\n\n    \\`\\`\\`json\n    ${formattedContextJson}\n    \\`\\`\\`\n    [FIN DEL CONTEXTO DE REFERENCIA]\n\n    [MENSAJE ACTUAL DEL USUARIO]\n    ${currentText}`;\n}\n\n// 7. Salida consolidada\nreturn [{\n  json: {\n    chat_input: finalChatInput,\n    from: messageData.from,\n    user_profile: userProfile,\n    weekly_lists: weeklyListsArray,\n    system_prompt: finalSystemPrompt\n  },\n  binary: binaryData\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        -400
+      ],
+      "id": "acc95a74-f7a9-4d2a-afc0-de786fe7e536",
+      "name": "Prepare Input"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtener el mensaje entrante de WhatsApp\nconst messageText = $json.message || \"\";\n\n// Expresión regular para cualquier enlace de Instagram (perfil, post, reel, tv)\nconst instagramRegex = /https?:\\/\\/(?:www\\.)?instagram\\.com\\/[a-zA-Z0-9_\\-\\.\\/]+/i;\n\n// Expresión regular para cualquier enlace de TikTok (perfil, vídeo, vm.tiktok, vt.tiktok)\nconst tiktokRegex = /https?:\\/\\/(?:www\\.|vm\\.|vt\\.)?tiktok\\.com\\/[a-zA-Z0-9_\\-\\.\\/@]+/i;\n\nlet platform = '';\nlet extractedUrl = null;\nlet actorName = null;\nlet apiEndpoint = null;\n\nif (instagramRegex.test(messageText)) {\n  platform = 'instagram';\n  extractedUrl = messageText.match(instagramRegex)[0];\n  actorName = 'apidojo/instagram-scraper';\n  apiEndpoint = 'https://api.apify.com/v2/actors/apidojo~instagram-scraper/run-sync-get-dataset-items?token={}';\n} else if (tiktokRegex.test(messageText)) {\n  platform = 'tiktok';\n  extractedUrl = messageText.match(tiktokRegex)[0];\n  actorName = 'novi/tiktok-scraper-ultimate';\n  apiEndpoint = 'https://api.apify.com/v2/actors/novi~tiktok-scraper-ultimate/run-sync-get-dataset-items?token={}';\n}\n\n// Estructura de entrada unificada para ambos actores de Apify\nconst apifyInput = extractedUrl ? {\n  startUrls: [ extractedUrl ],\n  maxItems: 1\n} : null;\n\nreturn [{\n  json: {\n    ...$json,\n    platform: platform,         // 'instagram', 'tiktok' o 'none'\n    extracted_url: extractedUrl,// URL limpia extraída del mensaje\n    actor_name: actorName,      // Actor de Apify a invocar\n    api_endpoint: apiEndpoint,\n    apify_input: apifyInput      // Input idéntico para ambas APIs\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        -208
+      ],
+      "id": "27ae4a8a-bdb1-43f5-8069-0e1276a3939b",
+      "name": "Extract URL"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.platform }}",
+                    "rightValue": "=none",
+                    "operator": {
+                      "type": "string",
+                      "operation": "empty",
+                      "singleValue": true
+                    },
+                    "id": "c483d499-688d-4ac1-a0a9-a7214807a690"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "No URL"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Social Media URL"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        -208
+      ],
+      "id": "8cebe653-d9bb-44b1-82cd-4a78f8ece2a9",
+      "name": "Media Pre-processor1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.api_endpoint }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.apify_input }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        864,
+        -208
+      ],
+      "id": "cb807b35-1719-4b46-bb1e-c599fa69971e",
+      "name": "Media Scraper",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "upm7K9TyLAk1xvyS",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "users",
+          "mode": "list",
+          "cachedResultName": "users"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "weekly_tips": "={{ $json.weekly_tips }}",
+            "survey_completed": "={{ $json.survey_completed }}",
+            "phone": "={{ $json.from }}",
+            "description": "={{ $json.description }}"
+          },
+          "matchingColumns": [
+            "phone"
+          ],
+          "schema": [
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "weekly_tips",
+              "displayName": "weekly_tips",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "updated_at",
+              "displayName": "updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "survey_completed",
+              "displayName": "survey_completed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        2800,
+        -592
+      ],
+      "id": "fdbfaf72-0aac-431d-91c0-a002ff7bd084",
+      "name": "Update User Profile",
+      "credentials": {
+        "postgres": {
+          "id": "jnxbV4FAXGkWt4nT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "whatsapp_logs",
+          "mode": "list",
+          "cachedResultName": "whatsapp_logs"
+        },
+        "limit": 1,
+        "where": {
+          "values": [
+            {
+              "column": "wamid",
+              "value": "={{ $(\"Format Message\").first()?.json?.context_wamid }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1616,
+        -448
+      ],
+      "id": "dac2e9ea-6bed-4a6e-a5cc-6772db013419",
+      "name": "Get Message Context",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "jnxbV4FAXGkWt4nT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "whatsapp_logs",
+          "mode": "list",
+          "cachedResultName": "whatsapp_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "wamid": "={{ $json.wamid }}",
+            "message": "={{ JSON.stringify({\n  type: \"human\",\n  text: $json.whatsapp_message || $json.chat_input || \"\",\n  is_error: $json.is_error || false,\n  error_details: $json.error_details || null\n}) }}",
+            "session_id": "={{ $json.from }}",
+            "is_error": "={{ $json.is_error || false }}"
+          },
+          "matchingColumns": [
+            "wamid"
+          ],
+          "schema": [
+            {
+              "id": "wamid",
+              "displayName": "wamid",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "edited_at",
+              "displayName": "edited_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "is_error",
+              "displayName": "is_error",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1200,
+        -352
+      ],
+      "id": "aeeef9d8-d71c-4de1-8811-007cc84783d2",
+      "name": "Insert Message Log",
+      "credentials": {
+        "postgres": {
+          "id": "jnxbV4FAXGkWt4nT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let agentOutput;\nconst rawOutput = $json.output || \"\";\n\ntry {\n  agentOutput = typeof rawOutput === 'string' ? JSON.parse(rawOutput) : rawOutput;\n} catch (e) {\n  // Limpieza por si Gemini envolvió el JSON en ```json ... ```\n  const cleanedText = rawOutput.replace(/```json|```/g, '').trim();\n  try {\n    agentOutput = JSON.parse(cleanedText);\n  } catch (err) {\n    // Fallback de emergencia si el LLM devolvió texto plano por error\n    agentOutput = {\n      whatsapp_message: rawOutput,\n      profile_update: null\n    };\n  }\n}\n\nconst userProfile = $('Get User Profile').first()?.json || {};\nconst profileUpdate = agentOutput.profile_update || null;\n\n// Si profile_update trae datos, usamos los nuevos; si es null, preservamos exactamente los de PostgreSQL\nconst finalDescription = profileUpdate?.updated_profile_description || userProfile.description || \"Perfil no iniciado.\";\nconst finalSurveyFinished = profileUpdate?.survey_finished ?? userProfile.survey_completed ?? false;\nconst finalWeeklyTips = profileUpdate?.weekly_reports_opt_in ?? userProfile.weekly_tips ?? false;\n\nconst sessionId = $('Prepare Input').first().json.from;\n\nreturn [{\n  json: {\n    from: sessionId,\n    whatsapp_message: agentOutput.whatsapp_message || rawOutput,\n    description: finalDescription,\n    survey_completed: finalSurveyFinished,\n    weekly_tips: finalWeeklyTips,\n    has_profile_changes: profileUpdate !== null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2432,
+        -496
+      ],
+      "id": "8fb3cc34-7daa-4c6a-9c01-1c9a675ab57a",
+      "name": "Code Success"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Capturamos los datos del item actual\nconst inputItem = $input.first().json;\n\n// 1. Comprobamos si el nodo anterior ha registrado un error de n8n/Gemini\nconst hasError = inputItem.error !== undefined || $node[\"AI Agent\"]?.error !== undefined;\n\nlet userReply = \"\";\nlet rawErrorDetails = \"\";\n\nif (hasError) {\n  // Extraemos el mensaje de error o la pila técnica si existen\n  const errObject = inputItem.error || $node[\"AI Agent\"]?.error;\n  rawErrorDetails = typeof errObject === 'object' ? JSON.stringify(errObject) : String(errObject);\n\n  // 2. Interpretación amigable según el tipo de error\n  if (rawErrorDetails.includes(\"503\") || rawErrorDetails.includes(\"high demand\")) {\n    userReply = \"⚠️ *Servidor ocupado:* El modelo de IA de Google está experimentando una alta demanda temporal. Por favor, inténtalo de nuevo en unos segundos.\";\n  } else if (rawErrorDetails.includes(\"429\") || rawErrorDetails.includes(\"Quota\")) {\n    userReply = \"⏳ *Límite alcanzado:* Se ha superado la cuota temporal de consultas. Espera un par de minutos antes de enviar otro mensaje.\";\n  } else if (rawErrorDetails.includes(\"timeout\") || rawErrorDetails.includes(\"ETIMEDOUT\")) {\n    userReply = \"⏱️ *Tiempo de espera agotado:* La respuesta ha tardado más de lo esperado en procesarse. Por favor, vuelve a intentarlo.\";\n  } else {\n    // Respuesta genérica para otros errores\n    userReply = \"❌ *Lo sentimos:* Ha ocurrido un inconveniente procesando tu solicitud en este momento. Por favor, vuelve a intentarlo más tarde.\";\n  }\n} else {\n  // 3. Si todo funcionó bien, obtenemos la respuesta normal del Agente\n  userReply = inputItem.output || inputItem.text || inputItem.chat_output || \"Respuesta procesada correctamente.\";\n}\n\nconst sessionId = $('Prepare Input').first().json.from;\n\nreturn [{\n  json: {\n    ...$json,\n    is_error: hasError,\n    // Este campo es el que debes enviar en el nodo final de respuesta de WhatsApp\n    whatsapp_message: userReply,\n    from: sessionId,\n    // Detalle técnico mantenido por si quieres registrarlo en base de datos o logs\n    error_details: hasError ? rawErrorDetails : null\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2432,
+        -304
+      ],
+      "id": "5024b3ea-5a96-4a38-b15e-3b05ebb671ba",
+      "name": "Code Error"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "whatsapp_logs",
+          "mode": "list",
+          "cachedResultName": "whatsapp_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "wamid": "={{ $json.messages[0].id }}",
+            "message": "={{ JSON.stringify({\n  type: \"ai\",\n  text: $(\"Unify Output\").first()?.json?.whatsapp_message || \"\",\n  is_error: $(\"Unify Output\").first()?.json?.is_error || false,\n  error_details: $(\"Unify Output\").first()?.json?.error_details || null\n}) }}",
+            "session_id": "={{ $(\"Unify Output\").first()?.json?.from }}",
+            "is_error": "={{ $(\"Unify Output\").first()?.json?.is_error || false }}"
+          },
+          "matchingColumns": [
+            "wamid"
+          ],
+          "schema": [
+            {
+              "id": "wamid",
+              "displayName": "wamid",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "edited_at",
+              "displayName": "edited_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "is_error",
+              "displayName": "is_error",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        3152,
+        -400
+      ],
+      "id": "9c39d555-049c-4d88-8237-8cf82f2fa611",
+      "name": "Insert AI Message Log",
+      "credentials": {
+        "postgres": {
+          "id": "jnxbV4FAXGkWt4nT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Si venimos de la rama de error o la normal, $json ya tiene el formato correcto\nconst input = $json;\n\nreturn [{\n  json: {\n    from: input.from,\n    whatsapp_message: input.whatsapp_message,\n    is_error: input.is_error || false,\n    error_details: input.error_details || null,\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2800,
+        -400
+      ],
+      "id": "99f6c6be-ac15-4653-ae18-0243da047094",
+      "name": "Unify Output"
+    },
+    {
+      "parameters": {
+        "description": "Ejecuta esta herramienta únicamente cuando el usuario pida explícitamente generar, ver, enviar o consultar nuevas ideas de contenido de la semana, propuestas de vídeos virales o su nuevo plan semanal.",
+        "workflowId": {
+          "__rl": true,
+          "value": "aIHVyl8y7BbAiSq7",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/aIHVyl8y7BbAiSq7",
+          "cachedResultName": "WhatsApp - Generate trending ideas"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        2288,
+        -224
+      ],
+      "id": "bb8fda3d-6603-4348-b678-9fafe6e25f6d",
+      "name": "generar_ideas_semanales"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f1d348f5-1b3e-4f96-85c4-38c91277d172",
+              "leftValue": "={{ $json.is_error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2592,
+        -496
+      ],
+      "id": "bb485b7a-082b-4077-b6fb-54b8a93026d4",
+      "name": "Output Condicional",
+      "alwaysOutputData": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Media Pre-processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get user message": {
+      "main": [
+        [
+          {
+            "node": "Extract URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Media Pre-processor": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract Media URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get user message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Media URL": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Format Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Format Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Last Weekly Lists": {
+      "main": [
+        [
+          {
+            "node": "Get Message Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Message": {
+      "main": [
+        [
+          {
+            "node": "Insert Message Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get User Profile": {
+      "main": [
+        [
+          {
+            "node": "Get Last Weekly Lists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "System Prompts Config": {
+      "main": [
+        [
+          {
+            "node": "Prepare Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Input": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract URL": {
+      "main": [
+        [
+          {
+            "node": "Media Pre-processor1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Media Pre-processor1": {
+      "main": [
+        [
+          {
+            "node": "Format Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Media Scraper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Media Scraper": {
+      "main": [
+        [
+          {
+            "node": "Format Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Message Context": {
+      "main": [
+        [
+          {
+            "node": "System Prompts Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Message Log": {
+      "main": [
+        [
+          {
+            "node": "Get User Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Message": {
+      "main": [
+        [
+          {
+            "node": "Insert AI Message Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Success": {
+      "main": [
+        [
+          {
+            "node": "Output Condicional",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Error": {
+      "main": [
+        [
+          {
+            "node": "Unify Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unify Output": {
+      "main": [
+        [
+          {
+            "node": "Send Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generar_ideas_semanales": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update User Profile": {
+      "main": [
+        []
+      ]
+    },
+    "Output Condicional": {
+      "main": [
+        [
+          {
+            "node": "Update User Profile",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Unify Output",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unify Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "038663cf-c41a-41b6-87dd-31cdc0ff6560",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e99cfdec23633f98b5b6da907c189d12977733dab61148e5e5094db57331b02a"
+  },
+  "nodeGroups": [],
+  "id": "82dy7TJ6iUthnFlq",
+  "tags": []
+}

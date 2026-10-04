@@ -1,0 +1,382 @@
+{
+  "name": "WhatsApp - Schedule weekly ideas",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -16,
+        -576
+      ],
+      "id": "18f28578-7c9e-47b7-94a3-62c4eed22bf7",
+      "name": "Schedule Trigger",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "=1295787823622600",
+        "recipientPhoneNumber": "= {{ $json.from }}",
+        "textBody": "={{ $json.whatsapp_message.content }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        -576
+      ],
+      "id": "77327adf-903a-452b-b661-6f40098cef7f",
+      "name": "Send Message",
+      "webhookId": "3f8ddc39-cb7c-4b21-977e-a9a9ba190800",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "8VIWvh1QeDCpKGks",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "whatsapp_logs",
+          "mode": "list",
+          "cachedResultName": "whatsapp_logs"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "wamid": "={{ $json.messages[0].id }}",
+            "message": "={{ JSON.stringify({\n  type: \"ai\",\n  text: $(\"Output Conditional\").first()?.json?.whatsapp_message || \"\",\n  is_error: $(\"Output Conditional\").first()?.json?.is_error || false,\n  error_details: $(\"Output Conditional\").first()?.json?.error_details || null\n}) }}",
+            "session_id": "={{ $(\"Output Conditional\").first()?.json?.from }}",
+            "is_error": "={{ $(\"Output Conditional\").first()?.json?.is_error || false }}"
+          },
+          "matchingColumns": [
+            "wamid"
+          ],
+          "schema": [
+            {
+              "id": "wamid",
+              "displayName": "wamid",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "edited_at",
+              "displayName": "edited_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false,
+              "removed": false
+            },
+            {
+              "id": "is_error",
+              "displayName": "is_error",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "boolean",
+              "canBeUsedToMatch": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        832,
+        -576
+      ],
+      "id": "7531679e-a1b0-42d8-afa6-32cafe3c1350",
+      "name": "Insert AI Message Log",
+      "credentials": {
+        "postgres": {
+          "id": "jnxbV4FAXGkWt4nT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "chat_messages",
+          "mode": "list",
+          "cachedResultName": "chat_messages"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message": "={{ JSON.stringify({\n  type: \"ai\",\n  content: $json.whatsapp_message,\n  tool_calls: [],\n  additional_kwargs: {},\n  response_metadata: {},\n  invalid_tool_calls: []\n}) }}",
+            "session_id": "= {{ $json.from }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "object",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        640,
+        -768
+      ],
+      "id": "6397af56-148e-48be-a0b3-58c821d0c96d",
+      "name": "Insert weekly ideas",
+      "credentials": {
+        "postgres": {
+          "id": "jnxbV4FAXGkWt4nT",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "aIHVyl8y7BbAiSq7",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/aIHVyl8y7BbAiSq7",
+          "cachedResultName": "WhatsApp - Generate trending ideas"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        208,
+        -576
+      ],
+      "id": "6e2b5c88-630e-4606-a0a8-f2ac8238e439",
+      "name": "Call 'WhatsApp - Generate trending ideas'",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "aa4bc623-e568-4a8a-b15f-8f08c0e78a7a",
+              "leftValue": "={{ $json.is_error }}",
+              "rightValue": "={{ true }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        -576
+      ],
+      "id": "6160e763-b463-47f5-a769-19a9fa4222b1",
+      "name": "Output Conditional",
+      "alwaysOutputData": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Call 'WhatsApp - Generate trending ideas'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Message": {
+      "main": [
+        [
+          {
+            "node": "Insert AI Message Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'WhatsApp - Generate trending ideas'": {
+      "main": [
+        [
+          {
+            "node": "Output Conditional",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Output Conditional": {
+      "main": [
+        [
+          {
+            "node": "Insert weekly ideas",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d8c382ab-6c62-4a6e-9fc7-f296f2f3c7bb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e99cfdec23633f98b5b6da907c189d12977733dab61148e5e5094db57331b02a"
+  },
+  "nodeGroups": [],
+  "id": "WAKzs0uq8IlVJB0j",
+  "tags": []
+}

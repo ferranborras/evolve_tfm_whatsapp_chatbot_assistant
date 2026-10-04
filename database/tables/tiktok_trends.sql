@@ -1,0 +1,26 @@
+-- TIKTOK TRENDS: Datos de perfiles y publicaciónes trending extraidos de tiktok
+create table public.tiktok_trends (
+  id text not null,
+  description text null,
+  hashtags jsonb null,
+  music_name text null,
+  music_author text null,
+  music_original boolean null,
+  video_url text null,
+  play_count bigint null,
+  like_count bigint null,
+  share_count bigint null,
+  comment_count bigint null,
+  duration integer null,
+  created_at timestamp without time zone null,
+  growth_score numeric null,
+  scraped_at timestamp without time zone null default now(),
+  region text null,
+  profile_url text null,
+  author_id text null,
+  author_username text null,
+  follower_count bigint null,
+  created_at_local timestamp without time zone null,
+  is_ad boolean null,
+  constraint tiktok_trends_pkey primary key (id)
+) TABLESPACE pg_default;
